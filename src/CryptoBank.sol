@@ -43,11 +43,22 @@ contract CryptoBank {
      * @dev To avoid reentrancy attacks the contract manage a state with ´_locked´ where it should be not locked indicading
      * that the call is not in process, while call is in process do not allow to fire callbacks.
      * NOTE: if the fuction related with ´_´ reverts, ´_locked´ reverts too. (reverts to {false})
+     * Logic is split into {_nonReentrantBefore} and {_nonReentrantAfter} to reduce deployed bytecode size.
      */
     modifier nonReentrant() {
+        _nonReentrantBefore();
+        _;
+        _nonReentrantAfter();
+    }
+
+    /// @dev Reverts if already locked, then sets the lock before executing the guarded function.
+    function _nonReentrantBefore() internal {
         require(!_locked, "Reentrant call");
         _locked = true;
-        _;
+    }
+
+    /// @dev Releases the lock after the guarded function completes (or reverts).
+    function _nonReentrantAfter() internal {
         _locked = false;
     }
 
@@ -90,7 +101,7 @@ contract CryptoBank {
      * @param amount_ amount to withdraw from own balance
      * @dev using {nonReentrant} to avoid Reentrancy attacks
      */
-    function withdrawEther(uint256 amount_) public checkTransferAmount(amount_) nonReentrant(){
+    function withdrawEther(uint256 amount_) public checkTransferAmount(amount_) nonReentrant {
         balances[msg.sender] -= amount_;
 
         (bool success,) = msg.sender.call{value: amount_}("");
@@ -114,7 +125,7 @@ contract CryptoBank {
      * @param amount_  amount of eth to send
      * @param to_ receiver address
      */
-    function sendEth(uint256 amount_, address to_) public checkTransferAmount(amount_) nonReentrant() {
+    function sendEth(uint256 amount_, address to_) public checkTransferAmount(amount_) nonReentrant {
         require(balances[to_] + amount_ <= depositLimit, "Max balance reached for receiver");
         balances[msg.sender] -= amount_;
         balances[to_] += amount_;

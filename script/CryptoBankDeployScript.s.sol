@@ -6,7 +6,6 @@ import {Script} from "forge-std/Script.sol";
 import {CryptoBank} from "../src/CryptoBank.sol";
 
 contract CryptoBankDeploy is Script {
-
     //TODO: Deploy on testnet
     function run() external {
         vm.startBroadcast();
